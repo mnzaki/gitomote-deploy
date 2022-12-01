@@ -1,0 +1,44 @@
+#!/bin/bash
+DOCKER_TAG=regv2/$(whoami)/${GL_REPO}:latest
+
+function prep_worktree() {
+  GIT_DIR="$(pwd)"
+  WORK_TREE="$(realpath "${GIT_DIR}/../../worktrees/${GL_REPO}")"
+  mkdir -p $WORK_TREE &&
+  git --work-tree=$WORK_TREE checkout -f &&
+  pushd $WORK_TREE &&
+  git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule init &&
+  git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule update --recursive
+}
+
+while read oldrev newrev ref; do
+  if [[ $ref =~ .*/(main)$ ]]; then
+    if [[ "$(git ls-tree --full-tree -r main .worktreeonly)" != "" ]]; then
+      prep_worktree
+      popd
+      exit 0
+    fi
+
+    if [[ "$(git ls-tree --full-tree -r main Makefile)" != "" ]]; then
+      prep_worktree &&
+      make || echo make failed
+      popd
+    fi
+
+    if [[ "$(git ls-tree --full-tree -r main Dockerfile)" != "" ]]; then
+      prep_worktree &&
+      docker build --pull -t $DOCKER_TAG . &&
+      docker push $DOCKER_TAG || echo Docker build or push failed
+      popd
+    fi
+
+    if [[ "$(git ls-tree --full-tree -r main docker-compose.yml)" != "" ]]; then
+      prep_worktree &&
+      (
+        docker-compose down;
+        docker-compose up -d --remove-orphans || echo docker-compose failed
+      )
+      popd
+    fi
+  fi
+done
