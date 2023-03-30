@@ -1,9 +1,9 @@
 #!/bin/bash -
 #===============================================================================
 #
-#          FILE: gitomote.sh
+#          FILE: gitomote
 #
-#         USAGE: ./gitomote.sh
+#         USAGE: ./gitomote
 #
 #   DESCRIPTION: for use with mnzaki/gitolite-deploy
 #

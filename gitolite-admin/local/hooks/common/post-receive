@@ -36,7 +36,7 @@ while read oldrev newrev ref; do
       prep_worktree &&
       (
         docker-compose down;
-        docker-compose up -d --remove-orphans || echo docker-compose failed
+        docker-compose up -d --build --remove-orphans || echo docker-compose failed
       )
       popd
     fi
