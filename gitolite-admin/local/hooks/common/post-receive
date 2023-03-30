@@ -5,14 +5,14 @@ function prep_worktree() {
   GIT_DIR="$(pwd)"
   WORK_TREE="$(realpath "${GIT_DIR}/../../worktrees/${GL_REPO}")"
   mkdir -p $WORK_TREE &&
-  git --work-tree=$WORK_TREE checkout -f &&
+  git --work-tree=$WORK_TREE checkout -f main &&
   pushd $WORK_TREE &&
   git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule init &&
   git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule update --recursive
 }
 
 while read oldrev newrev ref; do
-  if [[ $ref =~ .*/(main)$ ]]; then
+  if [[ $ref =~ .*/main$ ]]; then
     if [[ "$(git ls-tree --full-tree -r main .worktreeonly)" != "" ]]; then
       prep_worktree
       popd
