@@ -1,0 +1,17 @@
+#!/bin/bash
+# Useage: ./gitomote-setup infra@yourserver.com ./yourserver.com
+
+BASE="$(cd `dirname "$(realpath "$0")"`; pwd)"
+TARGET_GITOLITE_ADMIN="${1%%@*}-gitolite"
+
+set -x
+
+# clone your gitolite installation's gitolite-admin
+cd "$2"
+git clone "$1:gitolite-admin" "$TARGET_GITOLITE_ADMIN"
+# copy the contents of `gitomote/gitolite-admin` to it
+cd "$TARGET_GITOLITE_ADMIN"
+cp -r $BASE/.template-gitolite-admin/* .
+git add .
+git commit -m "feat: setup gitomote-deploy"
+git push
