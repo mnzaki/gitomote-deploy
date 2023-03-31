@@ -1,51 +1,109 @@
-# Intro
-This repo contains a simple docker-compose deployment script that is integrated with [gitolite](https://gitolite.com/) and a utility script `gitomote` to be used from your local machine to adminstrate the deployed services without sshing directly there.
+# Gitomote
 
-# Installation and Useage
+Simple push-to-deploy system as a post-receive hook integrated with
+[gitolite](https://gitolite.com/) and a utility script `gitomote` to be used
+from your local machine to adminstrate the deployed services without using ssh
+directly. Combine with persistent shared ssh connections and you have seamless
+remote docker-compose access.
 
-Setup [gitolite](https://gitolite.com/) on your server.
+## Installation and Setup
 
-Add the user that gitolite is run as to the `docker` group. Let's suppose you
-installed it for the user `infra`
+You will need a separate unix user on your server to act as the owner of the
+stored bare git repositories, and trigger their deployment. I like to use the
+name `infra` so that the deployment repos have a remote address like
+`infra@yourserver.com:nginx`
+
+### Clone gitomote-deploy locally
+
 ```sh
-usermod infra -a -G docker
-```
-
-clone your gitolite installation's  gitolite-admin and copy the contents of
-`gitolite-deploy/gitolite-admin` to it
-```sh
-git clone infra@yourdomain.com:gitolite-admin yourdomain-gitolite
-cp -r gitolite-deploy/gitolite-admin/* yourdomain-gitolite/
-```
-
-edit the `.gitolite.rc` file to uncomment the line that enables `LOCAL_CODE`
-loading from the gitolite-admin repo. This enables the `post-receive` hook.
-```sh
-cd /home/infra
-sed -i 's/# LOCAL_CODE.*GL_ADMIN_BASE.*/LOCAL_CODE => "$rc{GL_ADMIN_BASE}\/local",/' .gitolite.rc
-```
-
-edit the `.gitolite.rc` file to add the `'gitolite-deploy'` command to the `ENABLE`
-list
-```sh
-cd /home/infra
-sed -i "s/\(new commands here.*\)/\1\n'gitolite-deploy',/" .gitolite.rc
-```
-
-now copy the `gitomote` utility script to somewhere in your `$PATH` on your
-local computer
-```sh
+# clone the gitomote repo on your local machine
+git clone git@github.com:mnzaki/gitomote-deploy
+cd gitomote-deploy
+# Now copy gitomote somewhere in your $PATH
 # assuming ~/bin is in your $PATH
-cp gitolite-deploy/gitomote ~/bin
+cp gitomote ~/bin
 ```
 
-Use the `yourdomain-gitolite/conf/gitolite.conf` to add a new repo, clone the
-repo to your machine, and add a `docker-compose.yml` file to it. Commit and push
-to your `infra` gitolite. `docker-compose up -d --build` will be run
-automatically.
+### Install [gitolite](https://gitolite.com/) on yourserver.com
 
-And while in your local clone of any repo that is hosted on `infra` you can use
-`gitomote` as a replacement for running docker-compose remotely
+But first, you are going to need your personal ssh key handy, copy it to the clipboard
+
+```sh
+# with xsel
+xsel -b < ~/.ssh/id_rsa.pub
+# or with xclip
+xclip -selection clipboard -i < ~/.ssh/id_rsa.pub
 ```
-gitomote logs -f
+
+Now ssh to the server, and let's setup gitolite
+
+```sh
+ssh yourserver.com
+
+# if you are using Arch Linux
+pacman -Sy gitolite
+
+# if you are using a Debian
+apt-get install gitolite3
+
+# Add the user that gitolite is run as to the `docker` group. Let's call it
+# `infra`. We will also add it to the `docker` group so that it can talk to the
+# docker daemon
+useradd -m -G infra,docker infra
+su infra # switch to user infra
+cd # change directory to the user home
+
+echo paste your ssh public key then press Ctrl-D
+cat >> yourname.pub
+# paste your key with Ctrl-V then press Ctrl-D
+```
+
+Let's setup gitolite for this user. You might have to change the command to
+`gitolite3` depending on your linux distribution.
+```sh
+# still inside `su infra` on your server
+gitolite setup -pk yourname.pub
+
+# Stream EDit the .gitolite.rc file
+## uncomment the line that enables `LOCAL_CODE` loading from the
+## `gitolite-admin` repo
+sed -i 's/# LOCAL_CODE.*GL_ADMIN_BASE.*/LOCAL_CODE => "$rc{GL_ADMIN_BASE}\/local",/' .gitolite.rc
+## add the `gitomote-deploy` command to the list of `ENABLE`d commands
+sed -i "s/\(new commands here.*\)/\1\n'gitomote-deploy',/" .gitolite.rc
+```
+
+That's all! Now back to our local machine, let's deploy something.
+
+## Useage
+
+To administrate the gitolite installation, you need to clone the automatically
+generated `gitolite-admin` repo on your local machine, or just use the
+`gitomote-setup` script
+
+```sh
+# you can use the gitomote-deploy dir to manage your servers
+cd gitomote-deploy
+mkdir yourserver.com
+./gitomote-setup infra@yourserver.com ./yourserver.com
+```
+
+Now let's say we wanna deploy [Zulip](https://zulip.com)
+```sh
+# Edit the `infra-gitolite/conf/gitolite.conf` to add new repos
+cd ./yourserver.com/infra-gitolite
+cat >> conf/gitolite.conf<<EOF
+repo zulip
+    RW+     =   @all
+EOF
+git add conf
+git commit -m "repo: zulip"
+git push
+
+# and clone that to use it
+git clone infra@yourserver.com:zulip
+cd zulip
+# it's empty
+# add a `docker-compose.yml` file to it
+vim docker-compose.yml
+gitomote deploy
 ```
