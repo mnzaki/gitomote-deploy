@@ -25,13 +25,14 @@ fi
 
 USER_AT_HOST="${REMOTE%%:*}"
 IN_THIS_REPO="${REMOTE##*:}"
+GITOLITE_USER="${USER_AT_HOST%%@*}"
+HOST=${USER_AT_HOST##*@}
 
 # let's assume
-THERES_AN_ARGUMENT_FOR_ME=0 # so no.
+THERES_AN_ARGUMENT_FOR_ME= # so no.
 THE_ARGUMENT_IS="$1" # such that in
 case "$THE_ARGUMENT_IS" in
   new) THERES_AN_ARGUMENT_FOR_ME=2
-    GITOLITE_USER="${USER_AT_HOST%%@*}"
     pushd ../${GITOLITE_USER}-gitolite || exit 1
     cat >> conf/gitolite.conf <<EOF
 repo $IN_THIS_REPO
@@ -42,12 +43,16 @@ EOF
     git push
     popd
     ;; # i cri 3vryTym 5ever
-  ssh) THERES_AN_ARGUMENT_FOR_ME=9
-    exec ssh -t $USER_AT_HOST <<EOF
-      cd ~/worktrees/$IN_THIS_REPO
-      bash --login
-EOF
-   ;;
+  ssh)
+    shift
+    exec ssh -t $HOST "
+      cd ~$GITOLITE_USER/worktrees/$IN_THIS_REPO
+      sudo -u $GITOLITE_USER ${@:-bash}
+      "
+    ;;
+  exec)
+    exec gitomote ssh docker-compose "$@"
+    ;;
  deploy)
    exec gitomote up -d --build && gitomote logs --tail=100 -f
    ;;
