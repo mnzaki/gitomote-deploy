@@ -18,34 +18,55 @@
 #===============================================================================
 
 if ! REMOTE="$(git remote get-url origin)"; then
-  echo This git repository has no "'origin'" remote. set one using:
-  echo git remote add origin infra@yourserver.com:some-repo-in-gitolite-conf
-  exit 1
+  if [ "$1" = "new" ] ; then
+    REMOTE="${2%%/}/$(basename `pwd`)"
+  else
+    echo This git repository has no "'origin'" remote. Try something like:
+    echo gitomote new ssh://infra@yourserver.com[:4242]/some-repo-in-gitolite-conf
+    exit 1
+  fi
 fi
 
-USER_AT_HOST="${REMOTE%%:*}"
-IN_THIS_REPO="${REMOTE##*:}"
+USER_AT_HOST="${REMOTE#ssh://}"
+if [ "$USER_AT_HOST" = "$REMOTE" ]; then # supplied remote doesn't start with ssh://
+  IN_THIS_REPO="${REMOTE##*:}"
+  USER_AT_HOST="${REMOTE%%:*}"
+else
+  IN_THIS_REPO="${USER_AT_HOST##*/}"
+  USER_AT_HOST="${USER_AT_HOST%/*}"
+fi
 GITOLITE_USER="${USER_AT_HOST%%@*}"
-HOST=${USER_AT_HOST##*@}
+HOST_N_PORT=${USER_AT_HOST##*@}
+HOST=${HOST_N_PORT%%:*}
+if [ "$HOST" != "$HOST_N_PORT" ]; then
+  PORT=${HOST_N_PORT##*:}
+  USER_AT_HOST="${USER_AT_HOST%:*}"
+else
+  PORT=22
+fi
 
 # let's assume
-THERES_AN_ARGUMENT_FOR_ME= # so no.
 THE_ARGUMENT_IS="$1" # such that in
 case "$THE_ARGUMENT_IS" in
-  new) THERES_AN_ARGUMENT_FOR_ME=2
-    pushd ../${GITOLITE_USER}-gitolite || exit 1
-    cat >> conf/gitolite.conf <<EOF
+  new)
+    set -x
+    ( git remote get-url origin || git remote add origin "$REMOTE" ) &&
+    pushd ../${GITOLITE_USER}-gitolite &&
+    grep "repo $IN_THIS_REPO\$" conf/gitolite.conf || (
+      cat >> conf/gitolite.conf <<EOF
+
 repo $IN_THIS_REPO
     RW+     =   @all
 EOF
-    git add conf
-    git commit -m "repo: $IN_THIS_REPO"
-    git push
-    popd
-    ;; # i cri 3vryTym 5ever
+      git add conf
+      git commit -m "repo: $IN_THIS_REPO"
+      git push
+    ) && popd
+    exit
+    ;;
   ssh)
     shift
-    exec ssh -t $HOST "
+    exec ssh $HOST -p $PORT -t "
       cd ~$GITOLITE_USER/worktrees/$IN_THIS_REPO
       sudo -u $GITOLITE_USER ${@:-bash}
       "
@@ -53,11 +74,9 @@ EOF
   exec)
     exec gitomote ssh docker-compose "$@"
     ;;
- deploy)
-   exec gitomote up -d --build && gitomote logs --tail=100 -f
-   ;;
-esac # 3amel eih?
+  deploy)
+    exec gitomote up -d --build && gitomote logs --tail=100 -f
+    ;;
+esac
 
-if [ $THERES_AN_ARGUMENT_FOR_ME ]; then shift; fi
-# and whisper to the server
-ssh $USER_AT_HOST gitolite-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
+ssh $USER_AT_HOST -p $PORT gitolite-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
