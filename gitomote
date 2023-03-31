@@ -1,14 +1,14 @@
-#!/bin/bash -
+#!/bin/bash
 #===============================================================================
 #
 #          FILE: gitomote
 #
 #         USAGE: ./gitomote
 #
-#   DESCRIPTION: for use with mnzaki/gitolite-deploy
+#   DESCRIPTION: for use with mnzaki/gitomote-deploy
 #
 #       OPTIONS: ---
-#  REQUIREMENTS: ---
+#  REQUIREMENTS: git
 #          BUGS: ---
 #         NOTES: ---
 #        AUTHOR: Mina Nagy Zaki (mnzaki), mnzaki@gmail.com
@@ -17,11 +17,42 @@
 #      REVISION:  ---
 #===============================================================================
 
-set -o nounset                                  # Treat unset variables as an error
+if ! REMOTE="$(git remote get-url origin)"; then
+  echo This git repository has no "'origin'" remote. set one using:
+  echo git remote add origin infra@yourserver.com:some-repo-in-gitolite-conf
+  exit 1
+fi
 
-REMOTE="$(git remote get-url origin)"
+USER_AT_HOST="${REMOTE%%:*}"
+IN_THIS_REPO="${REMOTE##*:}"
 
-TARGET="${REMOTE%%:*}"
-REPO="${REMOTE##*:}"
+# let's assume
+THERES_AN_ARGUMENT_FOR_ME=0 # so no.
+THE_ARGUMENT_IS="$1" # such that in
+case "$THE_ARGUMENT_IS" in
+  new) THERES_AN_ARGUMENT_FOR_ME=2
+    GITOLITE_USER="${USER_AT_HOST%%@*}"
+    pushd ../${GITOLITE_USER}-gitolite || exit 1
+    cat >> conf/gitolite.conf <<EOF
+repo $IN_THIS_REPO
+    RW+     =   @all
+EOF
+    git add conf
+    git commit -m "repo: $IN_THIS_REPO"
+    git push
+    popd
+    ;; # i cri 3vryTym 5ever
+  ssh) THERES_AN_ARGUMENT_FOR_ME=9
+    exec ssh -t $USER_AT_HOST <<EOF
+      cd ~/worktrees/$IN_THIS_REPO
+      bash --login
+EOF
+   ;;
+ deploy)
+   exec gitomote up -d --build && gitomote logs --tail=100 -f
+   ;;
+esac # 3amel eih?
 
-ssh "$TARGET" gitolite-deploy "$REPO" "$@"
+if [ $THERES_AN_ARGUMENT_FOR_ME ]; then shift; fi
+# and whisper to the server
+ssh $USER_AT_HOST gitolite-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
