@@ -107,3 +107,8 @@ cd zulip
 vim docker-compose.yml
 gitomote deploy
 ```
+
+## See Also
+
+- Automatic nginx virtualhosts and letsencrypt certs https://github.com/mnzaki/docker-auto-revhttps
+- share ssh connections: https://www.linuxjournal.com/content/speed-multiple-ssh-connections-same-server
