@@ -35,7 +35,7 @@ while read oldrev newrev ref; do
     if [[ "$(git ls-tree --full-tree -r main docker-compose.yml)" != "" ]]; then
       prep_worktree &&
       (
-        docker-compose down;
+        #docker-compose down
         docker-compose up -d --build --remove-orphans || echo docker-compose failed
       )
       popd
