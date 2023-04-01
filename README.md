@@ -19,9 +19,9 @@ name `infra` so that the deployment repos have a remote address like
 # clone the gitomote repo on your local machine
 git clone git@github.com:mnzaki/gitomote-deploy
 cd gitomote-deploy
-# Now copy gitomote somewhere in your $PATH
+# Now link gitomote somewhere in your $PATH
 # assuming ~/bin is in your $PATH
-cp gitomote ~/bin
+ln -s gitomote ~/bin
 ```
 
 ### Install [gitolite](https://gitolite.com/) on yourserver.com
@@ -78,13 +78,13 @@ That's all! Now back to our local machine, let's deploy something.
 
 To administrate the gitolite installation, you need to clone the automatically
 generated `gitolite-admin` repo on your local machine, or just use the
-`gitomote-setup` script
+`gitomote setup` command
 
 ```sh
 # you can use the gitomote-deploy dir to manage your servers
 cd gitomote-deploy
 mkdir yourserver.com
-./gitomote-setup infra@yourserver.com ./yourserver.com
+gitomote setup infra@yourserver.com ./yourserver.com
 ```
 
 Now let's say we wanna deploy [Zulip](https://zulip.com)

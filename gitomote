@@ -17,33 +17,74 @@
 #      REVISION:  ---
 #===============================================================================
 
+usage() {
+  echo Usage:
+  echo $0 setup infra@yourserver.com[:4242] ./yourserver.com
+  echo cd yourserver.com
+  echo $0 new infra@yourserver.com[:4242] some-repo-in-gitolite
+  echo cd some-repo-in-gitolite
+  echo $0 up/down/stop/start/logs/etc \# passed to docker-compose
+  echo $0 deploy \# alias for up -d --build --remove-orphans
+  exit 1
+}
+
+if [ "$1" = "setup" ]; then
+  shift
+  if [ $# -lt 1 ]; then
+    usage
+  fi
+
+  BASE="$(cd `dirname "$(realpath "$0")"`; pwd)"
+  TARGET_GITOLITE_ADMIN="${1%%@*}-gitolite"
+  set -ex
+  cd "${2:-.}"
+  [ -d "$TARGET_GITOLITE_ADMIN" ] || git clone "ssh://$1/gitolite-admin" "$TARGET_GITOLITE_ADMIN"
+  cd "$TARGET_GITOLITE_ADMIN"
+  cp -r $BASE/.template-gitolite-admin/* .
+  git add .
+  git commit -m "feat: setup gitomote-deploy"
+  git push
+  exit
+fi
+
 if ! REMOTE="$(git remote get-url origin)"; then
   if [ "$1" = "new" ] ; then
-    REMOTE="${2%%/}/$(basename `pwd`)"
+    REMOTE="${2%%/}:${3:-$(basename `pwd`)}"
   else
     echo This git repository has no "'origin'" remote. Try something like:
-    echo gitomote new ssh://infra@yourserver.com[:4242]/some-repo-in-gitolite-conf
+    echo gitomote new infra@yourserver.com[:4242] some-repo-in-gitolite
     exit 1
   fi
 fi
 
-USER_AT_HOST="${REMOTE#ssh://}"
-if [ "$USER_AT_HOST" = "$REMOTE" ]; then # supplied remote doesn't start with ssh://
-  IN_THIS_REPO="${REMOTE##*:}"
-  USER_AT_HOST="${REMOTE%%:*}"
+REMOTE="${REMOTE#ssh://}"
+IN_THIS_REPO="${REMOTE##*/}"
+if [ "$IN_THIS_REPO" != "$REMOTE" ]; then # there was a slash
+  USER_AT_HOST_N_PORT="${REMOTE%%/*}"
 else
-  IN_THIS_REPO="${USER_AT_HOST##*/}"
-  USER_AT_HOST="${USER_AT_HOST%/*}"
+  IN_THIS_REPO="${REMOTE##*:*:}"
+  if [ "$IN_THIS_REPO" != "$REMOTE" ]; then # there weren 2 colons
+    USER_AT_HOST_N_PORT="${REMOTE%%:*:*}"
+  else
+    IN_THIS_REPO="${REMOTE##*:}"
+    if [ "$IN_THIS_REPO" != "$REMOTE" ]; then # there was 1 colon
+      USER_AT_HOST_N_PORT="${REMOTE%%:*}"
+    else
+      usage
+    fi
+  fi
 fi
-GITOLITE_USER="${USER_AT_HOST%%@*}"
-HOST_N_PORT=${USER_AT_HOST##*@}
-HOST=${HOST_N_PORT%%:*}
-if [ "$HOST" != "$HOST_N_PORT" ]; then
-  PORT=${HOST_N_PORT##*:}
-  USER_AT_HOST="${USER_AT_HOST%:*}"
-else
+
+PORT="${USER_AT_HOST_N_PORT##*:}"
+if [ "$PORT" = "$USER_AT_HOST_N_PORT" ]; then # no port was specified
   PORT=22
+  USER_AT_HOST="${USER_AT_HOST_N_PORT}"
+else
+  USER_AT_HOST=${USER_AT_HOST_N_PORT%:*}
 fi
+
+GITOLITE_USER="${USER_AT_HOST%%@*}"
+HOST=${USER_AT_HOST##*@}
 
 # let's assume
 THE_ARGUMENT_IS="$1" # such that in
@@ -68,7 +109,10 @@ EOF
     shift
     exec ssh $HOST -p $PORT -t "
       cd ~$GITOLITE_USER/worktrees/$IN_THIS_REPO
-      sudo -u $GITOLITE_USER ${@:-bash}
+      export GIT_DIR=~$GITOLITE_USER/repositories/$IN_THIS_REPO.git
+      export GIT_WORK_TREE=~$GITOLITE_USER/worktrees/$IN_THIS_REPO
+      echo -e \"git is bound\\nGIT_DIR=\$GIT_DIR\\nGIT_WORK_TREE=\$GIT_WORK_TREE\"
+      sudo -u $GITOLITE_USER --preserve-env=GIT_{DIR,WORK_TREE} ${@:-bash}
       "
     ;;
   exec)
