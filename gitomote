@@ -125,7 +125,7 @@ EOF
       git commit || exit 1
     fi
 
-    git submodule foreach git pull || exit 1
+    git submodule foreach git pull -f || exit 1
     if [ -n "`git diff --stat`" ]; then
       git add -u &&
       git commit -m "chore: update submodules" || exit 1
