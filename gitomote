@@ -18,13 +18,14 @@
 #===============================================================================
 
 usage() {
+  local ME=`basename $0`
   echo Usage:
-  echo $0 setup infra@yourserver.com[:4242] ./yourserver.com
+  echo $ME setup infra@yourserver.com[:4242] ./yourserver.com
   echo cd yourserver.com
-  echo $0 new infra@yourserver.com[:4242] some-repo-in-gitolite
+  echo $ME new infra@yourserver.com[:4242] some-repo-in-gitolite
   echo cd some-repo-in-gitolite
-  echo $0 up/down/stop/start/logs/etc \# passed to docker-compose
-  echo $0 deploy \# alias for up -d --build --remove-orphans
+  echo $ME up/down/stop/start/logs/etc \# passed to docker-compose
+  echo $ME deploy \# alias for up -d --build --remove-orphans
   exit 1
 }
 
@@ -130,7 +131,8 @@ EOF
       git commit -m "chore: update submodules" || exit 1
     fi
 
-    git push &&
+    git push
+
     exec gitomote logs --tail=10 -f
     ;;
 esac
