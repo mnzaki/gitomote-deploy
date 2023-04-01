@@ -119,7 +119,19 @@ EOF
     exec gitomote ssh docker-compose "$@"
     ;;
   deploy)
-    exec gitomote up -d --build && gitomote logs --tail=100 -f
+    git add -p || exit 1
+    if [ -n "`git diff --cached --stat`" ]; then
+      git commit || exit 1
+    fi
+
+    git submodule foreach git pull || exit 1
+    if [ -n "`git diff --stat`" ]; then
+      git add -u &&
+      git commit -m "chore: update submodules" || exit 1
+    fi
+
+    git push &&
+    exec gitomote logs --tail=10 -f
     ;;
 esac
 

@@ -74,7 +74,7 @@ sed -i "s/\(new commands here.*\)/\1\n'gitomote-deploy',/" .gitolite.rc
 
 That's all! Now back to our local machine, let's deploy something.
 
-## Useage
+## Usage
 
 To administrate the gitolite installation, you need to clone the automatically
 generated `gitolite-admin` repo on your local machine, or just use the
@@ -107,6 +107,25 @@ cd zulip
 vim docker-compose.yml
 gitomote deploy
 ```
+
+### Remote docker-compose
+
+While in any deployment directory you can use the `gitomote` with the same
+arguments as with `docker-compose`; it will run `docker-compose` remotely.
+
+```sh
+cd zulip
+gitomote ps
+gitomote logs -f
+```
+
+### Redeploying
+
+Just make changes then `git commit && git push` to deploy! This will run
+`docker-compose up -d --build --remove-orphans` remotely.
+
+You can also use `gitomote deploy` which will help you commit changes and update
+submodules and push and start tailing logs, all in one go.
 
 ## See Also
 
