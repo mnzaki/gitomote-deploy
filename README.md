@@ -69,7 +69,10 @@ gitolite setup -pk yourname.pub
 ## `gitolite-admin` repo
 sed -i 's/# LOCAL_CODE.*GL_ADMIN_BASE.*/LOCAL_CODE => "$rc{GL_ADMIN_BASE}\/local",/' .gitolite.rc
 ## add the `gitomote-deploy` command to the list of `ENABLE`d commands
-sed -i "s/\(new commands here.*\)/\1\n'gitomote-deploy',/" .gitolite.rc
+sed -i "s/\(new commands here.*\)/\1\n'gitomote-deploy', 'gitomote-ssh',\n/" .gitolite.rc
+
+## set the AUTH_OPTIONS to allow ssh to grab a PTY
+sed -i "s/^\(%RC = .*\)/\1\nAUTH_OPTIONS => 'no-port-forwarding,no-X11-forwarding,no-agent-forwarding',\n/" .gitolite.rc
 ```
 
 That's all! Now back to our local machine, let's deploy something.
