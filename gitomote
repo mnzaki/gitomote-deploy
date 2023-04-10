@@ -17,6 +17,16 @@
 #      REVISION:  ---
 #===============================================================================
 
+# TODO
+# gitomote submods
+#   ensure clean git
+#   go through submodules, pull them, commit
+# gitomote commit
+#   git submodule foreach git add -p
+#   git submodule foreach git commit
+#   git submodule foreach git push
+#   gitomote submods
+
 usage() {
   local ME=`basename $0`
   echo Usage:
@@ -108,7 +118,7 @@ EOF
     ;;
   ssh)
     shift
-    exec ssh $HOST -p $PORT -t "
+    exec ssh $USER_AT_HOST -p $PORT -t "
       cd ~$GITOLITE_USER/worktrees/$IN_THIS_REPO
       export GIT_DIR=~$GITOLITE_USER/repositories/$IN_THIS_REPO.git
       export GIT_WORK_TREE=~$GITOLITE_USER/worktrees/$IN_THIS_REPO
