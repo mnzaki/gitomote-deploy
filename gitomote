@@ -141,4 +141,4 @@ EOF
     ;;
 esac
 
-ssh $USER_AT_HOST -p $PORT gitolite-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
+ssh $USER_AT_HOST -p $PORT gitomote-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
