@@ -118,13 +118,7 @@ EOF
     ;;
   ssh)
     shift
-    exec ssh $USER_AT_HOST -p $PORT -t "
-      cd ~$GITOLITE_USER/worktrees/$IN_THIS_REPO
-      export GIT_DIR=~$GITOLITE_USER/repositories/$IN_THIS_REPO.git
-      export GIT_WORK_TREE=~$GITOLITE_USER/worktrees/$IN_THIS_REPO
-      echo -e \"git is bound\\nGIT_DIR=\$GIT_DIR\\nGIT_WORK_TREE=\$GIT_WORK_TREE\"
-      sudo -u $GITOLITE_USER --preserve-env=GIT_{DIR,WORK_TREE} ${@:-bash}
-      "
+    exec ssh $USER_AT_HOST -p $PORT -t gitomote-ssh "$IN_THIS_REPO" "${@:-bash}"
     ;;
   exec)
     exec gitomote ssh docker-compose "$@"
