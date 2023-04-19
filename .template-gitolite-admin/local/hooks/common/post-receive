@@ -7,29 +7,21 @@ function prep_worktree() {
   mkdir -p $WORK_TREE &&
   git --work-tree=$WORK_TREE checkout -f main &&
   pushd $WORK_TREE &&
-  git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule init &&
-  git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule update --recursive
+  git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" submodule update --init --recursive
 }
 
 while read oldrev newrev ref; do
   if [[ $ref =~ .*/main$ ]]; then
-    if [[ "$(git ls-tree --full-tree -r main .worktreeonly)" != "" ]]; then
-      prep_worktree
-      exit
-    fi
+    prep_worktree || exit 1
 
-    if [[ "$(git ls-tree --full-tree -r main Makefile)" != "" ]]; then
+    [ "$(git ls-tree --full-tree -r main .worktreeonly)" != "" ] && exit
+
+    if [ "$(git ls-tree --full-tree -r main Makefile)" != "" ]; then
       prep_worktree && make || exit 1
-    fi
-
-    if [[ "$(git ls-tree --full-tree -r main Dockerfile)" != "" ]]; then
-      prep_worktree &&
+    elif [ "$(git ls-tree --full-tree -r main Dockerfile)" != "" ]; then
       docker build --pull -t $DOCKER_TAG . &&
       docker push $DOCKER_TAG || exit 1
-    fi
-
-    if [[ "$(git ls-tree --full-tree -r main docker-compose.yml)" != "" ]]; then
-      prep_worktree &&
+    elif [ "$(git ls-tree --full-tree -r main docker-compose.yml)" != "" ]; then
       docker-compose up -d --build --remove-orphans || exit 1
     fi
   fi
