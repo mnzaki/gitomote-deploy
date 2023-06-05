@@ -79,8 +79,8 @@ if ! REMOTE="$(git remote get-url origin)"; then
 fi
 
 REMOTE="${REMOTE#ssh://}"
-IN_THIS_REPO="${REMOTE##*/}"
-if [ "$IN_THIS_REPO" != "$REMOTE" ]; then # there was a slash
+IN_THIS_REPO="${REMOTE#*/}"
+if [ "${IN_THIS_REPO##*/}" != "$REMOTE" ]; then # there was a slash
   USER_AT_HOST_N_PORT="${REMOTE%%/*}"
 else
   IN_THIS_REPO="${REMOTE##*:*:}"
@@ -136,6 +136,8 @@ EOF
   deploy)
     git add -p || exit 1
     if [ -n "`git diff --cached --stat`" ]; then
+      git diff --cached
+      read -p "[ENTER] to commit" &&
       git commit || exit 1
     fi
 
