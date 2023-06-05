@@ -30,7 +30,7 @@
 usage() {
   local ME=`basename $0`
   echo Usage:
-  echo $ME setup ./yourserver.com [infra[@yourserver.com[:4242]]]
+  echo $ME setup ./yourserver.com [infra[@yourserver.com[:22]]]
   echo cd yourserver.com
   echo $ME new infra@yourserver.com[:4242] some-repo-in-gitolite
   echo cd some-repo-in-gitolite
@@ -38,6 +38,10 @@ usage() {
   echo $ME deploy \# alias for up -d --build --remove-orphans
   exit 1
 }
+if [ "$1" = "help" ]; then
+  usage
+  exit 0
+fi
 
 if [ "$1" = "setup" ]; then
   shift
