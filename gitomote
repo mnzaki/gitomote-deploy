@@ -30,7 +30,7 @@
 usage() {
   local ME=`basename $0`
   echo Usage:
-  echo $ME setup ./yourserver.com infra[@yourserver.com[:4242]]
+  echo $ME setup ./yourserver.com [infra[@yourserver.com[:4242]]]
   echo cd yourserver.com
   echo $ME new infra@yourserver.com[:4242] some-repo-in-gitolite
   echo cd some-repo-in-gitolite
@@ -41,14 +41,14 @@ usage() {
 
 if [ "$1" = "setup" ]; then
   shift
-  if [ $# -lt 2 ]; then
+  if [ $# -lt 1 ]; then
     usage
   fi
 
   BASE="$(cd `dirname "$(realpath "$0")"`; pwd)"
   SERVER_DIR="$1"
   mkdir -p "$SERVER_DIR"
-  SERVER_REMOTE="$2"
+  SERVER_REMOTE="${2:-infra}"
   TARGET_GITOLITE_ADMIN="$SERVER_DIR/${SERVER_REMOTE%%@*}-gitolite"
   if [ ! -d "$TARGET_GITOLITE_ADMIN" -a -z "${SERVER_REMOTE%%*@*}" ]; then # we have a full remote name
     SERVER_REMOTE="$SERVER_REMOTE@$(basename "$SERVER_DIR")"
