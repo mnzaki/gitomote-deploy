@@ -36,6 +36,7 @@ usage() {
   echo cd some-repo-in-gitolite
   echo $ME up/down/stop/start/logs/etc \# passed to docker-compose
   echo $ME deploy \# alias for up -d --build --remove-orphans
+  echo $ME backup \# copy all named volumes to backups/YYYY-MM-DD-HH-MM-SS
   exit 1
 }
 if [ "$1" = "help" ]; then
@@ -151,6 +152,16 @@ EOF
 
     exec gitomote logs --tail=10 -f
     ;;
+  backup)
+    COMPOSE_NAME="$(basename "$IN_THIS_REPO")"
+    VOLUMES_DIR="/var/lib/docker/volumes/$COMPOSE_NAME"
+    BACKUP_DEST="../../backups/$IN_THIS_REPO/$(date +%Y-%m-%d-%H-%M-%S)"
+    exec gitomote ssh <<EOF
+      mkdir -p "$BACKUP_DEST/volumes"
+      docker-compose stop
+      sudo sh -c 'rsync -UHa $VOLUMES_DIR* "$BACKUP_DEST/volumes/" && rsync -UHa . $BACKUP_DEST/worktree' && echo SUCCESS: "$BACKUP_DEST" || echo FAILED: "$BACKUP_DEST"
+      docker-compose start
+EOF
 esac
 
 ssh $USER_AT_HOST -p $PORT gitomote-deploy "$IN_THIS_REPO" "${PLEASE:-$@}" #|
