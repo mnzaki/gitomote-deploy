@@ -155,12 +155,26 @@ EOF
   backup)
     COMPOSE_NAME="$(basename "$IN_THIS_REPO")"
     VOLUMES_DIR="/var/lib/docker/volumes/$COMPOSE_NAME"
-    BACKUP_DEST="../../backups/$IN_THIS_REPO/$(date +%Y-%m-%d-%H-%M-%S)"
+    BACKUP_DEST="../../backups/$(date +%Y-%m-%d)"
+    BACKUP_DEST_TAR="../../backups/$(date +%Y-%m-%d).tar.gz"
+
     exec gitomote ssh <<EOF
-      mkdir -p "$BACKUP_DEST/volumes"
-      docker-compose stop
-      sudo sh -c 'rsync -UHa $VOLUMES_DIR* "$BACKUP_DEST/volumes/" && rsync -UHa . $BACKUP_DEST/worktree' && echo SUCCESS: "$BACKUP_DEST" || echo FAILED: "$BACKUP_DEST"
-      docker-compose start
+      BACKUP_DEST=\$(realpath "$BACKUP_DEST")
+      BACKUP_DEST_TAR=\$(realpath "$BACKUP_DEST_TAR")
+      mkdir -p "\$BACKUP_DEST"/{volumes,worktrees,repositories}
+
+      #docker-compose stop
+      BACKUP_SCRIPT="
+        set -ex
+        rsync -UHa $VOLUMES_DIR* '\$BACKUP_DEST/volumes/'
+        rsync -UHa . '\$BACKUP_DEST/worktrees/$IN_THIS_REPO'
+        rsync -UHa ../../repositories/$IN_THIS_REPO.git '\$BACKUP_DEST/repositories/$IN_THIS_REPO.git'
+        sudo tar -C \$BACKUP_DEST/.. -czf '\$BACKUP_DEST_TAR' '\$(basename \$BACKUP_DEST)'
+      " 
+      sudo sh -c "\$BACKUP_SCRIPT" &&
+        echo SUCCESS: "\$BACKUP_DEST_TAR" ||
+        echo FAILED: "\$BACKUP_DEST_TAR"
+      #docker-compose start
 EOF
 esac
 
