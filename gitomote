@@ -132,7 +132,7 @@ EOF
     exec ssh $USER_AT_HOST -p $PORT -t gitomote-ssh "$IN_THIS_REPO" "${@:-bash}"
     ;;
   exec)
-    exec gitomote ssh docker-compose "$@"
+    exec gitomote ssh docker compose "$@"
     ;;
   deploy)
     git add -p || exit 1
@@ -163,7 +163,7 @@ EOF
       BACKUP_DEST_TAR=\$(realpath "$BACKUP_DEST_TAR")
       mkdir -p "\$BACKUP_DEST"/{volumes,worktrees,repositories}
 
-      #docker-compose stop
+      #docker compose stop
       BACKUP_SCRIPT="
         set -ex
         rsync -UHa $VOLUMES_DIR* '\$BACKUP_DEST/volumes/'
@@ -174,7 +174,7 @@ EOF
       sudo sh -c "\$BACKUP_SCRIPT" &&
         echo SUCCESS: "\$BACKUP_DEST_TAR" ||
         echo FAILED: "\$BACKUP_DEST_TAR"
-      #docker-compose start
+      #docker compose start
 EOF
 esac
 

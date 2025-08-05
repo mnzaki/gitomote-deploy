@@ -22,4 +22,4 @@ set -o nounset                                  # Treat unset variables as an er
 REPO="$HOME/worktrees/$1"
 shift
 cd "$REPO" &&
-exec docker-compose $@
+exec docker compose $@

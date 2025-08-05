@@ -22,7 +22,7 @@ while read oldrev newrev ref; do
       docker build --pull -t $DOCKER_TAG . &&
       docker push $DOCKER_TAG || exit 1
     elif [ "$(git ls-tree --full-tree -r main docker-compose.yml)" != "" ]; then
-      docker-compose up -d --build --remove-orphans || exit 1
+      docker compose up -d --build --remove-orphans || exit 1
     fi
   fi
 done

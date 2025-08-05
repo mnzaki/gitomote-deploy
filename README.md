@@ -4,7 +4,7 @@ Simple push-to-deploy system as a post-receive hook integrated with
 [gitolite](https://gitolite.com/) and a utility script `gitomote` to be used
 from your local machine to adminstrate the deployed services without using ssh
 directly. Combine with persistent shared ssh connections and you have seamless
-remote docker-compose access.
+remote docker compose access.
 
 ## Installation and Setup
 
@@ -111,10 +111,10 @@ vim docker-compose.yml
 gitomote deploy
 ```
 
-### Remote docker-compose
+### Remote docker compose
 
 While in any deployment directory you can use the `gitomote` with the same
-arguments as with `docker-compose`; it will run `docker-compose` remotely.
+arguments as with `docker compose`; it will run `docker compose` remotely.
 
 ```sh
 cd zulip
@@ -125,7 +125,7 @@ gitomote logs -f
 ### Redeploying
 
 Just make changes then `git commit && git push` to deploy! This will run
-`docker-compose up -d --build --remove-orphans` remotely.
+`docker compose up -d --build --remove-orphans` remotely.
 
 You can also use `gitomote deploy` which will help you commit changes and update
 submodules and push and start tailing logs, all in one go.
