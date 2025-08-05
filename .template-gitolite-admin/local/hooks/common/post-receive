@@ -1,9 +1,11 @@
 #!/bin/bash
 DOCKER_TAG=regv2/$(whoami)/${GL_REPO}:latest
 
+GIT_DIR="$(pwd)"
+WORK_TREE="$(realpath "${GIT_DIR}/../../worktrees/")/${GL_REPO}"
+
 function prep_worktree() {
-  GIT_DIR="$(pwd)"
-  WORK_TREE="$(realpath "${GIT_DIR}/../../worktrees/")/${GL_REPO}"
+  [ "$(git ls-tree --full-tree -r main .noworktree)" != "" ] && exit
   mkdir -p $WORK_TREE &&
   sudo git --work-tree=$WORK_TREE checkout -f main &&
   pushd $WORK_TREE &&
